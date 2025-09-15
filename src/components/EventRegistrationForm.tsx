@@ -270,7 +270,7 @@ export default function EventRegistrationForm() {
                       type="email"
                       value={formData.leaderEmail}
                       onChange={(e) => setFormData((prev) => ({ ...prev, leaderEmail: e.target.value }))}
-                      placeholder="leader@university.edu"
+                      placeholder="student@example.edu"
                       className="pl-10"
                       required
                     />
@@ -285,7 +285,7 @@ export default function EventRegistrationForm() {
                       type="tel"
                       value={formData.leaderPhone}
                       onChange={(e) => setFormData((prev) => ({ ...prev, leaderPhone: e.target.value }))}
-                      placeholder="+1 (555) 123-4567"
+                      placeholder="+256 000 000-000"
                       className="pl-10"
                       required
                     />
