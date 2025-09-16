@@ -17,8 +17,17 @@ import {
   Calendar,
   BarChart3
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+
 import { useToast } from "@/hooks/use-toast";
 import EventModal from './EventModal';
+
 
 // Skeleton loader
 function SummarySkeleton() {
@@ -48,6 +57,9 @@ interface Application {
   group_leader_email: string;
   group_leader_phone: string;
   university: string;
+  solution: string;
+  problem_statement: string;
+  full_names: string[];
   group_size: number;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
@@ -99,6 +111,121 @@ export default function AdminDashboard() {
     }
     setLoading(false);
   };
+// CSV Export
+const handleExportCSV = () => {
+  if (filteredApplications.length === 0) {
+    toast({ title: "No applications to export", variant: "destructive" });
+    return;
+  }
+
+  const headers = [
+    "Project Name",
+    "University",
+    "Leader Email",
+    "Leader Phone",
+    "Group Size",
+    "Group Members",
+    "Problem statement",
+    "Proposed solution",
+    "Status",
+    "Submitted"
+  ];
+
+  const rows = filteredApplications.map(app => [
+    app.project_name, // now project_name
+    app.university,
+    app.group_leader_email,
+    app.group_leader_phone,
+    app.group_size,
+    app.full_names,
+    app.problem_statement,
+    app.solution,
+    app.status,
+    new Date(app.created_at).toLocaleDateString()
+  ]);
+
+  const csvContent =
+    [headers, ...rows]
+      .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", "applications.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+// PDF Export (via Print)
+const handleExportPDF = () => {
+  if (filteredApplications.length === 0) {
+    toast({ title: "No applications to export", variant: "destructive" });
+    return;
+  }
+
+  const html = `
+    <html>
+      <head>
+        <title>Applications Export</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
+          th { background: #f4f4f4; text-align: left; }
+        </style>
+      </head>
+      <body>
+        <h2>Applications Export</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Project Name</th>
+              <th>University</th>
+              <th>Leader Email</th>
+              <th>Leader Phone</th>
+              <th>Group Size</th>
+              <th>Group Members</th>
+              <th>Problem Statement</th>
+              <th>Solution</th>              
+              <th>Status</th>
+              <th>Submitted</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredApplications
+              .map(app => `
+                <tr>
+                  <td>${app.project_name}</td>
+                  <td>${app.university}</td>
+                  <td>${app.group_leader_email}</td>
+                  <td>${app.group_leader_phone}</td>
+                  <td>${app.group_size}</td>
+                  <td>${app.full_names}</td>
+                  <td>${app.problem_statement}</td>
+                  <td>${app.solution}</td>                  
+                  <td>${app.status}</td>
+                  <td>${new Date(app.created_at).toLocaleDateString()}</td>
+                </tr>
+              `)
+              .join("")}
+          </tbody>
+        </table>
+      </body>
+    </html>
+  `;
+
+  const printWindow = window.open("", "_blank");
+  if (printWindow) {
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  }
+};
 
   // Compute summary stats
   useEffect(() => {
@@ -127,6 +254,9 @@ export default function AdminDashboard() {
     fetchEvents();
     fetchApplications();
   }, []);
+
+// state for modal
+const [selectedApp, setSelectedApp] = useState<Application | null>(null);
 
   const filteredApplications = selectedEvent === 'all'
     ? applications
@@ -181,7 +311,7 @@ export default function AdminDashboard() {
       fetchApplications();
     }
   };
-
+const [expandedId, setExpandedId] = useState<string | null>(null);
   return (
     <div className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
@@ -361,6 +491,7 @@ export default function AdminDashboard() {
           <TabsContent value="applications" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-semibold">Applications</h2>
+           
               <div className="flex gap-2">
                 <select
                   value={selectedEvent}
@@ -371,8 +502,16 @@ export default function AdminDashboard() {
                   {events.map((event) => (
                     <option key={event.id} value={event.id}>{event.name}</option>
                   ))}
-                </select>
+                </select>                
               </div>
+              <div className="flex gap-2">
+                <Button onClick={handleExportCSV} variant="outline">
+                  Export CSV
+                </Button>
+                <Button onClick={handleExportPDF} variant="outline">
+                  Export PDF
+                </Button>
+              </div>              
             </div>
 
             <div className="grid gap-4">
@@ -395,9 +534,14 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedApp(app)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>     
+
                       {app.status === 'pending' && (
                         <>
                           <Button
@@ -423,8 +567,35 @@ export default function AdminDashboard() {
                 </Card>
               ))}
             </div>
+
+                <Dialog open={!!selectedApp} onOpenChange={() => setSelectedApp(null)}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>
+                        {selectedApp?.project_name} – Team Members
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-2">
+                      {selectedApp?.full_names?.length ? (
+                        <ul className="list-disc pl-6 space-y-1">
+                          {selectedApp.full_names.map((name, idx) => (
+                            <li key={idx}>{name}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No members listed.</p>
+                      )}
+                      <div className="pt-3 text-sm">
+                        <p><strong>Leader Email:</strong> {selectedApp?.group_leader_email}</p>
+                        <p><strong>Leader Phone:</strong> {selectedApp?.group_leader_phone}</p>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog> 
+
           </TabsContent>
         </Tabs>
+        
       </div>
     </div>
   );
