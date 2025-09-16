@@ -59,7 +59,7 @@ interface Application {
   university: string;
   solution: string;
   problem_statement: string;
-  full_names: string[];
+  full_names: string[] | string;
   group_size: number;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
@@ -257,6 +257,7 @@ const handleExportPDF = () => {
 
 // state for modal
 const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const filteredApplications = selectedEvent === 'all'
     ? applications
@@ -534,13 +535,16 @@ const [expandedId, setExpandedId] = useState<string | null>(null);
                       </div>
                     </div>
                     <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedApp(app)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>     
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedApp(app);
+                            setIsDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>   
 
                       {app.status === 'pending' && (
                         <>
@@ -568,30 +572,74 @@ const [expandedId, setExpandedId] = useState<string | null>(null);
               ))}
             </div>
 
-                <Dialog open={!!selectedApp} onOpenChange={() => setSelectedApp(null)}>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>
-                        {selectedApp?.project_name} – Team Members
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-2">
-                      {selectedApp?.full_names?.length ? (
-                        <ul className="list-disc pl-6 space-y-1">
-                          {selectedApp.full_names.map((name, idx) => (
-                            <li key={idx}>{name}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">No members listed.</p>
-                      )}
-                      <div className="pt-3 text-sm">
-                        <p><strong>Leader Email:</strong> {selectedApp?.group_leader_email}</p>
-                        <p><strong>Leader Phone:</strong> {selectedApp?.group_leader_phone}</p>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog> 
+<Dialog open={!!selectedApp} onOpenChange={() => setSelectedApp(null)}>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>{selectedApp?.project_name}</DialogTitle>
+      <DialogDescription>
+        Group Members
+      </DialogDescription>
+    </DialogHeader>
+
+    {(() => {
+      let members: string[] = [];
+
+      if (Array.isArray(selectedApp?.full_names)) {
+        // Already a real array
+        members = selectedApp.full_names;
+      } else if (typeof selectedApp?.full_names === "string") {
+        try {
+          // Try to parse JSON array
+          const parsed = JSON.parse(selectedApp.full_names);
+          if (Array.isArray(parsed)) {
+            members = parsed;
+          } else {
+            // fallback: split comma string
+            members = selectedApp.full_names
+              .split(",")
+              .map(m => m.trim())
+              .filter(Boolean);
+          }
+        } catch {
+          // not JSON, fallback to comma-split
+          members = selectedApp.full_names
+            .split(",")
+            .map(m => m.trim())
+            .filter(Boolean);
+        }
+      }
+
+      return members.length > 0 ? (
+        <ul className="list-disc pl-6">
+          {members.map((m, idx) => (
+            <li key={idx}>{m}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-muted-foreground">No members listed.</p>
+      );
+    })()}
+        {/* Problem Statement */}
+    {selectedApp?.problem_statement && (
+      <div>
+        <h4 className="font-semibold mb-2">Problem Statement</h4>
+        <p className="text-sm text-muted-foreground whitespace-pre-line">
+          {selectedApp.problem_statement}
+        </p>
+      </div>
+    )}
+
+    {/* Solution */}
+    {selectedApp?.solution && (
+      <div>
+        <h4 className="font-semibold mb-2">Solution</h4>
+        <p className="text-sm text-muted-foreground whitespace-pre-line">
+          {selectedApp.solution}
+        </p>
+      </div>
+    )}
+  </DialogContent>
+</Dialog>
 
           </TabsContent>
         </Tabs>
