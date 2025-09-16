@@ -17,6 +17,8 @@ projectName: string;
   leaderEmail: string;
   leaderPhone: string;
   selectedEvent: string;
+  problemStatement: string;   // 🆕
+  solution: string;
 }
 
 interface Event {
@@ -37,6 +39,8 @@ export default function EventRegistrationForm() {
     leaderEmail: "",
     leaderPhone: "",
     selectedEvent: "",
+    problemStatement: "",  // 🆕
+    solution: "",          // 🆕
   });
 
   const [events, setEvents] = useState<Event[]>([]);
@@ -142,6 +146,8 @@ export default function EventRegistrationForm() {
         group_size: formData.groupSize,
         group_leader_email: formData.leaderEmail,
         group_leader_phone: formData.leaderPhone,
+        problem_statement: formData.problemStatement,   // 🆕
+        solution: formData.solution,           
       },
     ]);
 
@@ -168,6 +174,8 @@ export default function EventRegistrationForm() {
       leaderEmail: "",
       leaderPhone: "",
       selectedEvent: "",
+      problemStatement: "",  // new
+      solution: "",          // new
     });
   };
 
@@ -258,7 +266,33 @@ export default function EventRegistrationForm() {
                   />
                 </div>
               </div>
+              {/* Problem Statement */}
+              <div className="space-y-2">
+                <Label htmlFor="problemStatement">Problem Statement *</Label>
+                <textarea
+                  id="problemStatement"
+                  value={formData.problemStatement}
+                  onChange={(e) => setFormData(prev => ({ ...prev, problemStatement: e.target.value }))}
+                  placeholder="Describe the problem your project aims to solve"
+                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  required
+                />
+              </div>
 
+              {/* Proposed Solution */}
+              <div className="space-y-2">
+                <Label htmlFor="solution">Proposed Solution *</Label>
+                  <div className="relative">
+                <textarea
+                  id="solution"
+                  value={formData.solution}
+                  onChange={(e) => setFormData(prev => ({ ...prev, solution: e.target.value }))}
+                  placeholder="Explain your solution approach"
+                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  required
+                />
+                </div>
+              </div>
               {/* Contact Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -270,7 +304,7 @@ export default function EventRegistrationForm() {
                       type="email"
                       value={formData.leaderEmail}
                       onChange={(e) => setFormData((prev) => ({ ...prev, leaderEmail: e.target.value }))}
-                      placeholder="student@example.edu"
+                      placeholder="leader@university.edu"
                       className="pl-10"
                       required
                     />
@@ -285,7 +319,7 @@ export default function EventRegistrationForm() {
                       type="tel"
                       value={formData.leaderPhone}
                       onChange={(e) => setFormData((prev) => ({ ...prev, leaderPhone: e.target.value }))}
-                      placeholder="+256 000 000-000"
+                      placeholder="+1 (555) 123-4567"
                       className="pl-10"
                       required
                     />
